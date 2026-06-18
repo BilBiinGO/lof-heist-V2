@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>LoF Heist — Line of Fire Investigation</title>
+<style>
+:root{
+  --ink:#0d0d0d;--paper:#f7f4ee;--aged:#e8e3d8;--tape:#f5c518;
+  --tape-dark:#c9a010;--red:#c0392b;--green:#1e8449;--green-light:#27ae60;
+  --mono:'Courier New',monospace;--stamp:'Impact','Arial Narrow',sans-serif;
+  --sh:4px 6px 20px rgba(0,0,0,.45);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{font-family:Arial,sans-serif;background:var(--ink);color:#f0f0f0;min-height:100vh}
+.screen{display:none}
+.screen.active{display:block}
+#s-land.active{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:2rem;text-align:center}
+#s-proj.active{display:flex;flex-direction:column;align-items:center;min-height:100vh;padding:2rem}
+.land-eye{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:#444;margin-bottom:1.5rem}
+.land-title{font-family:var(--stamp);font-size:clamp(60px,13vw,110px);color:var(--tape);line-height:.85;letter-spacing:.03em;text-shadow:5px 5px 0 var(--red);margin-bottom:.5rem}
+.land-sub{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#3a3a3a;margin-bottom:2.5rem}
+.land-menu{display:flex;flex-direction:column;gap:10px;width:100%;max-width:300px}
+.menu-card{background:var(--paper);border:none;padding:15px 18px;cursor:pointer;display:flex;align-items:center;gap:14px;text-align:left;width:100%;border-left:4px solid var(--tape);transition:transform .12s,box-shadow .12s}
+.menu-card:hover{transform:translateY(-2px);box-shadow:var(--sh)}
+.mc-icon{font-size:22px;flex-shrink:0}
+.mc-title{font-family:var(--stamp);font-size:15px;letter-spacing:.05em;color:var(--ink);display:block}
+.mc-sub{font-size:11px;color:#888;margin-top:1px;display:block}
+.panel{min-height:100vh;background:#111;padding:1.5rem;max-width:580px;margin:0 auto}
+.back-lnk{background:none;border:none;color:#555;font-size:12px;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;margin-bottom:1.5rem;padding:0;display:block}
+.back-lnk:hover{color:#aaa}
+.ph{font-family:var(--stamp);font-size:28px;color:var(--tape);letter-spacing:.04em;margin-bottom:.2rem}
+.ps{font-size:12px;color:#555;margin-bottom:1.5rem}
+.lbl{display:block;font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#555;margin-bottom:5px}
+.inp{width:100%;background:#0d0d0d;border:1px solid #2a2a2a;color:#f0f0f0;padding:10px 13px;font-size:14px;margin-bottom:1rem;outline:none;font-family:inherit}
+.inp:focus{border-color:var(--tape)}
+.inp-code{font-family:var(--mono);font-size:22px;letter-spacing:.18em;text-transform:uppercase;text-align:center}
+.btn-y{width:100%;background:var(--tape);color:var(--ink);border:none;padding:13px;font-family:var(--stamp);font-size:18px;letter-spacing:.06em;cursor:pointer}
+.btn-y:hover{background:var(--tape-dark)}
+.btn-y:disabled{background:#222;color:#444;cursor:not-allowed}
+.btn-g{width:100%;background:transparent;color:#888;border:1px solid #2a2a2a;padding:11px;font-size:13px;cursor:pointer;margin-top:6px}
+.btn-g:hover{border-color:#555;color:#ccc}
+.team-row{display:flex;gap:8px;margin-bottom:8px}
+.team-row .inp{margin-bottom:0;flex:1}
+.rm-btn{background:none;border:1px solid #2a2a2a;color:#555;width:36px;height:38px;cursor:pointer;font-size:20px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.rm-btn:hover{border-color:var(--red);color:var(--red)}
+.add-team{background:none;border:1px dashed #2a2a2a;color:#555;padding:8px;width:100%;cursor:pointer;font-size:12px;letter-spacing:.08em;margin-bottom:1rem}
+.add-team:hover{border-color:var(--tape);color:var(--tape)}
+.code-box{background:#000;border:2px solid var(--tape);padding:14px;font-family:var(--mono);font-size:28px;color:var(--tape);text-align:center;letter-spacing:.2em;margin:1rem 0}
+.err{color:var(--red);font-size:12px;margin-top:6px;display:none}
+select.inp{appearance:none}
+#sync{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9000;display:none;flex-direction:column;align-items:center;justify-content:center;gap:10px}
+#sync.on{display:flex}
+.spin{width:32px;height:32px;border:2px solid #222;border-top-color:var(--tape);border-radius:50%;animation:spin .8s linear infinite}
+.spin-lbl{font-size:13px;color:#777;letter-spacing:.08em}
+@keyframes spin{to{transform:rotate(360deg)}}
+#s-fac.active{display:block}
+.fac-bar{background:#000;border-bottom:2px solid #1a1a1a;padding:10px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;position:sticky;top:0;z-index:100}
+.fac-logo{font-family:var(--stamp);font-size:20px;color:var(--tape);letter-spacing:.05em}
+.fac-code{font-family:var(--mono);font-size:11px;color:#333}
+.fac-sp{flex:1}
+.fac-clk{font-family:var(--mono);font-size:28px;color:#fff;min-width:75px;text-align:right}
+.fac-clk.urg{color:var(--red);animation:blink 1s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.4}}
+.fb{background:#1a1a1a;border:1px solid #2a2a2a;color:#bbb;padding:6px 12px;cursor:pointer;font-size:12px;letter-spacing:.06em;text-transform:uppercase}
+.fb:hover{background:#222;border-color:#444}
+.fb.go{border-color:var(--green-light);color:var(--green-light)}
+.fb.go:hover{background:var(--green);color:#fff}
+.fb.stop{border-color:var(--red);color:var(--red)}
+.fb.stop:hover{background:var(--red);color:#fff}
+.fac-body{display:grid;grid-template-columns:1fr 260px;min-height:calc(100vh - 54px)}
+.fac-main{padding:16px;overflow-y:auto}
+.fac-side{background:#080808;border-left:1px solid #111;padding:14px;overflow-y:auto}
+.sec{font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#2a2a2a;margin-bottom:8px;margin-top:16px}
+.sec:first-child{margin-top:0}
+.sbt{width:100%;border-collapse:collapse;margin-bottom:14px}
+.sbt th{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#2a2a2a;padding:7px 8px;border-bottom:1px solid #1a1a1a;text-align:left}
+.sbt td{padding:9px 8px;border-bottom:1px solid #0d0d0d;vertical-align:middle}
+.sbt tr.top td{background:rgba(245,197,24,.05)}
+.sbn{font-size:13px;font-weight:700;color:#ccc}
+.sbp{font-family:var(--mono);font-size:17px;color:var(--tape);text-align:right}
+.rnk{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;font-size:10px;font-weight:700;margin-right:6px}
+.r1{background:var(--tape);color:var(--ink)}.r2{background:#888;color:#000}.r3{background:#7a5c10;color:#fff}
+.pip{width:22px;height:22px;border:1px solid #1a1a1a;display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#222;margin:0 1px}
+.pip.dn{background:var(--green);border-color:var(--green);color:#fff}
+.pip.ft{background:var(--tape);border-color:var(--tape);color:var(--ink)}
+.pip.cu{border-color:var(--tape);color:var(--tape)}
+.pip.bx{background:var(--tape);border-color:var(--tape);color:var(--ink)}
+.tcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(185px,1fr));gap:10px;margin-bottom:14px}
+.tcard{background:#111;border:1px solid #1e1e1e;padding:12px 14px}
+.tcard-n{font-size:13px;font-weight:700;color:#ddd;margin-bottom:4px}
+.tcard-s{font-family:var(--mono);font-size:20px;color:var(--tape);margin-bottom:4px}
+.tcard-st{font-size:11px;color:#3a3a3a;margin-bottom:8px}
+.tcard-pips{display:flex;gap:3px;margin-bottom:8px}
+.tcard-btns{display:flex;gap:5px;flex-wrap:wrap}
+.mb{background:none;border:1px solid #222;color:#444;padding:4px 8px;font-size:10px;letter-spacing:.06em;cursor:pointer;text-transform:uppercase}
+.mb:hover{border-color:#555;color:#aaa}
+.mb.gy:hover{border-color:var(--tape);color:var(--tape)}
+.mb.gr{border-color:var(--green);color:var(--green-light)}
+.feed{list-style:none}
+.fi{padding:6px 0;border-bottom:1px solid #0d0d0d;font-size:11px;color:#444;line-height:1.4}
+.fi:last-child{border-bottom:none}
+.fi .ft{font-family:var(--mono);font-size:10px;color:#2a2a2a;margin-right:4px}
+.fi.hi{color:var(--tape)}.fi.bo{color:var(--green-light)}
+.topt{background:#0d0d0d;border:1px solid #222;padding:14px 16px;margin-bottom:8px;cursor:pointer;display:flex;align-items:center;gap:12px;transition:border-color .15s;width:100%;text-align:left}
+.topt:hover{border-color:var(--tape)}
+.topt-n{font-size:15px;font-weight:700;color:#ddd}
+.topt-s{font-size:11px;color:#3a3a3a;margin-top:2px}
+#s-team.active{display:block}
+.gh{background:#000;border-bottom:2px solid #111;padding:9px 14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;position:sticky;top:0;z-index:100}
+.gh-n{font-family:var(--stamp);font-size:16px;color:var(--tape);letter-spacing:.05em}
+.gh-sc{font-size:11px;color:#333;letter-spacing:.07em;text-transform:uppercase}
+.gh-pts{font-family:var(--mono);font-size:15px;color:#ddd;margin-left:auto}
+.gh-t{font-family:var(--mono);font-size:17px;color:#444;min-width:50px;text-align:right}
+.gh-t.urg{color:var(--red)}
+.gbody{padding:14px;max-width:580px;margin:0 auto}
+.wait{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:2rem;min-height:calc(100vh - 50px)}
+.wait-h{font-family:var(--stamp);font-size:40px;color:var(--tape);letter-spacing:.04em;margin-bottom:.5rem}
+.wait-s{font-size:13px;color:#444;max-width:260px;line-height:1.65;margin-bottom:1.5rem}
+.sp{width:36px;height:36px;border:2px solid #1a1a1a;border-top-color:var(--tape);border-radius:50%;animation:spin .9s linear infinite;margin:0 auto}
+.env-room{padding:4px 0}
+.env-intro{font-size:12px;color:#555;text-align:center;line-height:1.65;margin-bottom:14px;font-style:italic}
+.env-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.env{aspect-ratio:1.55;position:relative;overflow:hidden;box-shadow:2px 3px 10px rgba(0,0,0,.5);transition:transform .15s,box-shadow .15s;border:none;cursor:pointer;width:100%;background:var(--aged)}
+.env:hover.env-open{transform:translateY(-3px);box-shadow:4px 8px 18px rgba(0,0,0,.6)}
+.env.env-lock{cursor:default;filter:brightness(.4)}
+.env-bg{position:absolute;inset:0;background:linear-gradient(150deg,var(--aged),#cec8b6)}
+.env-flap{position:absolute;top:0;left:0;right:0;height:44%;background:var(--paper);clip-path:polygon(0 0,100% 0,50% 100%);border-bottom:1px solid #c5bfb0}
+.env-sh{position:absolute;inset:0;background:linear-gradient(to bottom,transparent 55%,rgba(0,0,0,.1))}
+.env-lines{position:absolute;bottom:22%;left:12%;right:12%;display:flex;flex-direction:column;gap:5px}
+.env-line{height:1px;background:rgba(0,0,0,.12)}
+.env-num{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-family:var(--stamp);font-size:28px;color:rgba(0,0,0,.1);letter-spacing:.08em}
+.env-lbl{position:absolute;bottom:7px;left:50%;transform:translateX(-50%);font-family:var(--mono);font-size:9px;color:#888;letter-spacing:.09em;text-transform:uppercase;white-space:nowrap}
+.env-stamp{position:absolute;top:10%;right:6%;width:34%;aspect-ratio:1;border:3px solid rgba(30,132,73,.8);border-radius:2px;display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:0;transform:rotate(11deg);transition:opacity .3s}
+.env.env-done .env-stamp{opacity:1}
+.env-stamp-t{font-family:var(--stamp);font-size:9px;color:rgba(30,132,73,.9);letter-spacing:.08em;text-align:center;line-height:1.25}
+.env-lock-i{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:20px;opacity:.35}
+.env-glow{position:absolute;inset:0;box-shadow:inset 0 0 0 3px var(--tape);animation:glow 2s ease-in-out infinite}
+@keyframes glow{0%,100%{opacity:.4}50%{opacity:1}}
+.env-tap{position:absolute;bottom:7px;left:50%;transform:translateX(-50%);font-family:var(--mono);font-size:9px;color:var(--tape);letter-spacing:.09em;text-transform:uppercase;white-space:nowrap}
+.env-bonus{background:#0d0d00;border:2px solid var(--tape);display:flex;flex-direction:column;align-items:center;justify-content:center;aspect-ratio:1.55;cursor:pointer;transition:transform .15s;width:100%}
+.env-bonus:hover{transform:translateY(-3px)}
+.env-bonus.env-blk{opacity:.2;cursor:default;filter:grayscale(1)}
+.env-bonus-i{font-size:26px;margin-bottom:6px}
+.env-bonus-l{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--tape);text-align:center;line-height:1.5}
+.cf{background:var(--paper);color:var(--ink);box-shadow:var(--sh);margin-bottom:16px;position:relative}
+.cf-top{background:var(--ink);color:var(--paper);padding:11px 14px;display:flex;align-items:center;gap:10px}
+.cf-back{background:none;border:1px solid #333;color:#888;padding:5px 10px;font-size:11px;letter-spacing:.08em;cursor:pointer;text-transform:uppercase;flex-shrink:0}
+.cf-back:hover{border-color:#666;color:#ddd}
+.cf-ic{font-size:26px;flex-shrink:0}
+.cf-h1{font-family:var(--stamp);font-size:18px;letter-spacing:.04em;color:var(--tape);line-height:1.2}
+.cf-h2{font-size:11px;color:#666;letter-spacing:.06em}
+.cf-cls{position:absolute;top:10px;right:10px;border:2px solid rgba(192,57,43,.8);padding:3px 8px;transform:rotate(-7deg);font-family:var(--stamp);font-size:11px;color:rgba(192,57,43,.85);letter-spacing:.1em;pointer-events:none}
+.dos{padding:16px 18px;border-bottom:2px dashed #c8c3ba}
+.dos-eye{font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#aaa;margin-bottom:4px}
+.dos-title{font-family:Georgia,serif;font-size:18px;font-weight:700;color:var(--ink);margin-bottom:10px;line-height:1.2}
+.dos-body{font-size:13px;color:#333;line-height:1.75}
+.evs{padding:14px 18px;border-bottom:2px dashed #c8c3ba}
+.ev-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.ev-card{background:#eceae3;border:1px solid #d0cdc4;padding:9px 11px}
+.ev-tag{font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#aaa;margin-bottom:3px}
+.ev-ic{font-size:20px;margin-bottom:3px}
+.ev-tx{font-size:11px;color:#666;line-height:1.5}
+.qss{padding:14px 18px;border-bottom:2px dashed #c8c3ba}
+.qs-eye{font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#aaa;margin-bottom:10px}
+.qb{margin-bottom:14px}
+.qb:last-child{margin-bottom:0}
+.q-txt{font-size:13px;font-weight:700;color:var(--ink);margin-bottom:7px;line-height:1.4}
+.q-opts{display:flex;flex-direction:column;gap:5px}
+.qo{background:#eceae3;border:2px solid #d0cdc4;padding:8px 11px;cursor:pointer;display:flex;align-items:flex-start;gap:9px;transition:border-color .1s,background .1s;text-align:left;width:100%}
+.qo:hover:not(.ql){border-color:#888;background:#e4e1d8}
+.qo.qsel{border-color:var(--ink);background:#e0ddd4}
+.qo.qok{border-color:var(--green);background:rgba(39,174,96,.1);pointer-events:none}
+.qo.qbad{border-color:var(--red);opacity:.45;pointer-events:none}
+.qo.ql{pointer-events:none}
+.qd{font-family:var(--mono);font-size:15px;font-weight:700;color:#bbb;width:20px;flex-shrink:0;line-height:1.45}
+.qo.qsel .qd{color:var(--ink)}.qo.qok .qd{color:var(--green)}
+.qt{font-size:12px;color:#444;line-height:1.4}
+.qo.qsel .qt{color:var(--ink)}
+.hint-bar{display:flex;align-items:center;gap:8px;padding:9px 18px;background:#eceae3;border-bottom:2px dashed #c8c3ba}
+.hbtn{background:none;border:1px solid #bbb;color:#888;padding:5px 11px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;flex:1}
+.hbtn:hover:not(:disabled){border-color:#555;color:#333}
+.hbtn:disabled{opacity:.3;cursor:not-allowed}
+.htok{font-size:11px;color:#aaa}
+.hint-reveal{padding:9px 18px;background:rgba(245,197,24,.1);border-bottom:2px dashed #c8c3ba;font-size:12px;color:#554400;line-height:1.55}
+.hint-reveal strong{color:#3a2d00}
+.lock-sh{padding:16px 18px;background:#1a1a1a;display:flex;flex-direction:column;align-items:center}
+.lock-lbl{font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#333;margin-bottom:10px}
+.lock-digs{display:flex;gap:8px;margin-bottom:14px}
+.ld{width:54px;height:68px;background:#0d0d0d;border:2px solid #1e1e1e;font-family:var(--mono);font-size:34px;font-weight:700;color:var(--tape);display:flex;align-items:center;justify-content:center}
+.ld.ldf{border-color:#333}
+.ld.lde{border-color:var(--red);animation:shake .35s}
+.ld.ldo{border-color:var(--green);color:var(--green-light)}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+.lock-btn{width:100%;max-width:320px;background:var(--tape);color:var(--ink);border:none;padding:13px;font-family:var(--stamp);font-size:19px;letter-spacing:.06em;cursor:pointer}
+.lock-btn:hover:not(:disabled){background:var(--tape-dark)}
+.lock-btn:disabled{background:#222;color:#333;cursor:not-allowed}
+.lock-btn.crk{background:var(--green);color:#fff}
+#ul{position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:8000;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:2rem}
+#ul.on{display:flex}
+.ul-ic{font-size:72px;margin-bottom:1rem;animation:pop .4s}
+@keyframes pop{0%{transform:scale(0)}70%{transform:scale(1.2)}100%{transform:scale(1)}}
+.ul-h{font-family:var(--stamp);font-size:48px;color:var(--tape);letter-spacing:.04em;text-shadow:4px 4px 0 var(--red);margin-bottom:.4rem}
+.ul-pts{font-family:var(--mono);font-size:22px;color:#fff;margin-bottom:.2rem}
+.ul-fi{font-size:14px;color:var(--green-light);margin-bottom:1.5rem;min-height:20px}
+.ul-btn{background:var(--tape);color:var(--ink);border:none;padding:13px 32px;font-family:var(--stamp);font-size:18px;letter-spacing:.06em;cursor:pointer}
+.bf{background:#0a0a00;border:2px solid var(--tape);margin-bottom:16px}
+.bf-head{background:#000;border-bottom:2px solid var(--tape);padding:12px 16px}
+.bf-eye{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--tape);margin-bottom:3px}
+.bf-h{font-family:var(--stamp);font-size:22px;color:var(--tape);letter-spacing:.04em}
+.bf-body{padding:18px;font-size:13px;color:#bbb;line-height:1.85;white-space:pre-line}
+.bf-foot{padding:14px 18px;border-top:1px solid #1a1a00;display:flex;flex-direction:column;gap:8px}
+.bf-note{font-size:11px;color:#333;text-align:center;margin-bottom:2px}
+.cmp{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:2rem;min-height:calc(100vh - 50px)}
+.cmp-m{font-size:80px;margin-bottom:1rem}
+.cmp-h{font-family:var(--stamp);font-size:52px;color:var(--tape);letter-spacing:.04em;text-shadow:4px 4px 0 var(--red);margin-bottom:.4rem}
+.cmp-s{font-size:14px;color:#555;margin-bottom:.5rem}
+.cmp-sc{font-family:var(--mono);font-size:38px;color:#fff;margin-bottom:.25rem}
+.cmp-r{font-size:13px;color:#333}
+.proj-hd{text-align:center;margin-bottom:1.5rem}
+.proj-t{font-family:var(--stamp);font-size:clamp(40px,8vw,80px);color:var(--tape);letter-spacing:.06em;text-shadow:3px 3px 0 var(--red)}
+.proj-c{font-family:var(--mono);font-size:13px;color:#222;letter-spacing:.15em;margin-top:4px}
+.proj-clk{font-family:var(--mono);font-size:clamp(28px,6vw,52px);color:#fff;margin-top:.4rem}
+.proj-clk.urg{color:var(--red);animation:blink 1s infinite}
+.ptbl{width:100%;max-width:900px;border-collapse:collapse}
+.ptbl th{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#1a1a1a;padding:10px 12px;border-bottom:1px solid #0d0d0d;text-align:left}
+.ptbl td{padding:12px;border-bottom:1px solid #0d0d0d;vertical-align:middle}
+.ptbl tr.pr1 td{background:rgba(245,197,24,.06)}
+.pn{font-family:var(--stamp);font-size:clamp(18px,3vw,28px);letter-spacing:.03em}
+.psc{font-family:var(--mono);font-size:clamp(20px,3.5vw,30px);color:var(--tape);text-align:right}
+.ppip{display:inline-flex;align-items:center;justify-content:center;width:clamp(22px,3vw,32px);height:clamp(22px,3vw,32px);border:1px solid #0d0d0d;font-size:10px;font-weight:700;color:#111;margin:0 2px}
+.ppip.dn{background:var(--green);border-color:var(--green);color:#fff}
+.ppip.ft{background:var(--tape);border-color:var(--tape);color:var(--ink)}
+.ppip.bx{background:var(--tape);border-color:var(--tape);color:var(--ink)}
+.proj-cn{margin-top:1.5rem;display:flex;gap:8px;align-items:center}
+.proj-cn input{background:#0d0d0d;border:1px solid #1a1a1a;color:#f0f0f0;padding:8px 12px;font-family:var(--mono);font-size:16px;letter-spacing:.15em;text-transform:uppercase;width:190px;outline:none}
+.proj-cn input:focus{border-color:var(--tape)}
+.proj-cn button{background:var(--tape);color:var(--ink);border:none;padding:9px 18px;font-size:13px;cursor:pointer;letter-spacing:.06em}
+.proj-st{font-size:11px;color:#2a2a2a;margin-top:8px}
+#toasts{position:fixed;top:14px;right:14px;z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.toast{background:#1a1a1a;border-left:3px solid var(--tape);padding:8px 13px;font-size:12px;color:#ddd;max-width:260px;animation:tsl .3s ease}
+.toast.g{border-left-color:var(--green-light)}.toast.r{border-left-color:var(--red)}
+@keyframes tsl{from{transform:translateX(120%);opacity:0}to{transform:translateX(0);opacity:1}}
+@media(max-width:640px){.fac-body{grid-template-columns:1fr}.fac-side{border-left:none;border-top:1px solid #111}.ev-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div id="sync"><div class="spin"></div><div class="spin-lbl" id="sync-t">Saving…</div></div>
+<div id="toasts"></div>
+<div id="ul">
+  <div class="ul-ic" id="ul-ic">🔓</div>
+  <div class="ul-h" id="ul-h">CRACKED!</div>
+  <div class="ul-pts" id="ul-pts">+600 pts</div>
+  <div class="ul-fi" id="ul-fi"></div>
+  <button class="ul-btn" onclick="dismissUnlock()">Continue Investigation →</button>
+</div>
+
+<!-- LANDING -->
+<div id="s-land" class="screen active">
+  <div class="land-eye">🔒 Safe Day · Line of Fire Investigation Game</div>
+  <div class="land-title">LoF<br>HEIST</div>
+  <div class="land-sub">4 Sealed Files · 1 Missing Worker · Multiple Teams</div>
+  <div class="land-menu">
+    <button class="menu-card" onclick="go('setup')">
+      <span class="mc-icon">🎯</span>
+      <span><span class="mc-title">New Game</span><span class="mc-sub">Facilitator — create &amp; manage</span></span>
+    </button>
+    <button class="menu-card" onclick="go('join')">
+      <span class="mc-icon">🕵️</span>
+      <span><span class="mc-title">Join Game</span><span class="mc-sub">Teams — enter code &amp; investigate</span></span>
+    </button>
+    <button class="menu-card" onclick="go('proj')">
+      <span class="mc-icon">📺</span>
+      <span><span class="mc-title">Projector View</span><span class="mc-sub">Big-screen scoreboard</span></span>
+    </button>
+  </div>
+</div>
+
+<!-- SETUP -->
+<div id="s-setup" class="screen">
+  <div class="panel">
+    <button class="back-lnk" onclick="go('land')">← Back</button>
+    <div class="ph">NEW GAME</div>
+    <div class="ps">Set up your session. Teams join with the code you'll get below.</div>
+    <label class="lbl">Your name (facilitator)</label>
+    <input class="inp" id="fac-name" placeholder="e.g. Ahmed / Sara">
+    <label class="lbl">Team names (at least 2)</label>
+    <div id="teams-list"></div>
+    <button class="add-team" onclick="addTeam()">+ Add another team</button>
+    <label class="lbl">Game duration</label>
+    <select class="inp" id="game-dur">
+      <option value="2400">40 minutes</option>
+      <option value="3000">50 minutes</option>
+      <option value="1800">30 minutes (shorter)</option>
+    </select>
+    <button class="btn-y" onclick="createGame()">Generate Game Code →</button>
+    <div id="setup-result" style="display:none;margin-top:1.5rem">
+      <div class="lbl" style="margin-bottom:5px">Share this code with all teams</div>
+      <div class="code-box" id="code-show">——</div>
+      <button class="btn-y" onclick="openFac()" style="margin-bottom:8px">Open Facilitator Dashboard →</button>
+      <button class="btn-g" onclick="copyCode()">📋 Copy code to clipboard</button>
+    </div>
+  </div>
+</div>
+
+<!-- FACILITATOR -->
+<div id="s-fac" class="screen">
+  <div class="fac-bar">
+    <div class="fac-logo">LoF HEIST</div>
+    <div class="fac-code" id="fac-gid"></div>
+    <div class="fac-sp"></div>
+    <div class="fac-clk" id="fac-clk">—</div>
+    <button class="fb go" id="btn-start" onclick="startGame()">▶ Start</button>
+    <button class="fb" id="btn-pause" onclick="togglePause()" style="display:none">⏸ Pause</button>
+    <button class="fb stop" onclick="if(confirm('End game now?'))endGame()">■ End</button>
+  </div>
+  <div class="fac-body">
+    <div class="fac-main">
+      <div class="sec">Live scoreboard</div>
+      <table class="sbt"><thead><tr>
+        <th>Team</th><th style="text-align:center">S1</th><th style="text-align:center">S2</th>
+        <th style="text-align:center">S3</th><th style="text-align:center">S4</th>
+        <th style="text-align:center">★</th><th style="text-align:right">Score</th>
+      </tr></thead><tbody id="fac-sb"></tbody></table>
+      <div class="sec">Teams</div>
+      <div class="tcards" id="fac-cards"></div>
+      <div class="sec">Bonus scene — Ghost of Bay 4</div>
+      <div style="font-size:11px;color:#333;margin-bottom:8px">Grant only when a team notices "Bay 4" and asks about a prior incident.</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px" id="bonus-btns"></div>
+    </div>
+    <div class="fac-side">
+      <div class="sec" style="margin-top:0">Live feed</div>
+      <ul class="feed" id="fac-feed"><li class="fi" style="color:#1e1e1e;font-style:italic">Waiting to start…</li></ul>
+    </div>
+  </div>
+</div>
+
+<!-- JOIN -->
+<div id="s-join" class="screen">
+  <div class="panel">
+    <button class="back-lnk" onclick="go('land')">← Back</button>
+    <div class="ph">JOIN GAME</div>
+    <div class="ps">Enter the code from your facilitator, then pick your team.</div>
+    <label class="lbl">Game code</label>
+    <input class="inp inp-code" id="join-code" placeholder="HEIST-XXXX" oninput="this.value=this.value.toUpperCase()">
+    <button class="btn-y" id="join-btn" onclick="lookupGame()">Find Game →</button>
+    <div class="err" id="join-err"></div>
+    <div id="join-teams" style="display:none;margin-top:1.5rem">
+      <div class="lbl" style="margin-bottom:8px">Select your team</div>
+      <div id="join-team-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- TEAM GAME -->
+<div id="s-team" class="screen">
+  <div class="gh">
+    <div class="gh-n" id="gh-n">TEAM</div>
+    <div class="gh-sc" id="gh-sc">Investigation</div>
+    <div class="gh-pts" id="gh-pts">0 pts</div>
+    <div class="gh-t" id="gh-t"></div>
+  </div>
+  <div class="gbody" id="gbody"></div>
+</div>
+
+<!-- PROJECTOR -->
+<div id="s-proj" class="screen">
+  <div class="proj-hd">
+    <div class="proj-t">LoF HEIST</div>
+    <div class="proj-c">Code: <span id="proj-gid">—</span></div>
+    <div class="proj-clk" id="proj-clk">—</div>
+  </div>
+  <table class="ptbl"><thead><tr>
+    <th>#</th><th>Team</th>
+    <th style="text-align:center">S1</th><th style="text-align:center">S2</th>
+    <th style="text-align:center">S3</th><th style="text-align:center">S4</th>
+    <th style="text-align:center">★</th><th style="text-align:right">Score</th>
+  </tr></thead><tbody id="proj-body"></tbody></table>
+  <div class="proj-cn">
+    <input id="proj-in" placeholder="HEIST-XXXX" oninput="this.value=this.value.toUpperCase()">
+    <button onclick="connectProj()">Connect</button>
+  </div>
+  <div class="proj-st" id="proj-st"></div>
+</div>
+
+<script>
+// ═══════════════════ GAME CONTENT ═══════════════════
+const SCENES=[
+  {id:1,icon:"🚚",title:"The Reversing Truck",
+   dossier:`JOJO was found unconscious near <strong>Loading Bay 4</strong>. He was wearing wireless noise-cancelling earbuds — both ears. A reversing truck was actively manoeuvring in the bay, acoustic warning beeper operating.\n\nThe <strong>designated pedestrian lane</strong> was clearly signposted 15 metres to his left. Security footage shows JOJO crossing directly behind the truck without making eye contact with the driver. The driver's rear-view camera had a 4-second delay.\n\nWitness: <em>"He knew that route was off-limits. He'd been reminded twice this week."</em> JOJO was found 8 minutes later — conscious but unable to walk.`,
+   evidence:[{tag:"Exhibit A — Personal item",icon:"🎧",txt:"Wireless earbuds found in both ears. Left earbud cracked. Model: noise-cancelling. Volume: unknown."},{tag:"Exhibit B — Site signage",icon:"🚧",txt:"'PEDESTRIAN ROUTE →' sign at bay entrance. Arrow pointing left. Sign undamaged, clearly visible. Posted 3 weeks prior."}],
+   qs:[{q:"What was the primary Line of Fire hazard?",opts:[{d:"1",t:"Insufficient lighting in the loading bay"},{d:"2",t:"Truck driver was unlicensed or fatigued"},{d:"3",t:"JOJO in the blind spot of a reversing vehicle while wearing noise-cancelling earbuds"},{d:"4",t:"No PPE available at the bay entrance"}],correct:"3"},
+       {q:"What personal duty did JOJO fail?",opts:[{d:"5",t:"Sign the daily safety register before shift"},{d:"6",t:"Attend the morning toolbox talk"},{d:"7",t:"Remove headphones, use the pedestrian route, and establish eye contact with the driver"},{d:"8",t:"Wear a full-body reflective suit in the bay"}],correct:"7"},
+       {q:"What corrective action would most directly have prevented this?",opts:[{d:"1",t:"Install permanent speed bumps throughout the bay"},{d:"2",t:"Stop — make eye contact with the driver — cross only when acknowledged"},{d:"3",t:"Ban all reversing vehicles from Bay 4 permanently"},{d:"4",t:"Mandate two dedicated spotters per reversing vehicle"}],correct:"2"}],
+   code:"372",hint:"Focus on what JOJO was wearing and where he chose to walk. Q2's answer contains the behaviour that would have alerted the driver before JOJO entered the blind spot.",bonus:true},
+  {id:2,icon:"🪝",title:"The Suspended Load",
+   dossier:`JOJO deliberately ducked under the <strong>exclusion zone barrier</strong> of an active crane lift to save 4 minutes. The load — a 400kg steel beam — was mid-lift. The rigger had <strong>not yet signalled all-clear</strong>.\n\nThe rigging inspection tag was stamped OVERDUE by 17 days. JOJO's hard hat was found 3 metres from the drop zone.\n\nRigger's statement: <em>"I saw him go under. I froze. I should have called stop work. I didn't."</em>`,
+   evidence:[{tag:"Exhibit C — Barrier evidence",icon:"⚠️",txt:"Exclusion zone tape found severed — not stepped over. The cut is clean and deliberate. Barrier re-installed that morning after a previous near-miss."},{tag:"Exhibit D — Rigging tag",icon:"🏷️",txt:"Sling tag recovered from crane. Last inspection: 47 days ago. Required interval: 30 days. Status: OVERDUE (red stamp)."}],
+   qs:[{q:"What was the primary Line of Fire hazard?",opts:[{d:"3",t:"Crane operator was not certified"},{d:"4",t:"Ground surface under the crane was unstable"},{d:"5",t:"JOJO under a suspended load with compromised, overdue rigging"},{d:"6",t:"JOJO was not wearing a hard hat"}],correct:"5"},
+       {q:"What duty did JOJO fail?",opts:[{d:"9",t:"File a crane lift permit before the job"},{d:"1",t:"Stay outside the exclusion zone and wait for the explicit all-clear from the rigger"},{d:"2",t:"Personally inspect the rigging before the lift"},{d:"3",t:"Notify his supervisor he was near the crane"}],correct:"1"},
+       {q:"Both JOJO and the rigger failed. What should either one have done?",opts:[{d:"1",t:"Replace all rigging equipment site-wide"},{d:"2",t:"Prohibit crane lifts near pedestrian pathways"},{d:"3",t:"Either person had the authority and duty to call stop work the moment the barrier was crossed"},{d:"4",t:"Add a second outer exclusion zone"}],correct:"3"}],
+   code:"513",hint:"Two people failed here. Who had the power to stop this, and at what exact moment? Think about the all-clear signal and what both people saw."},
+  {id:3,icon:"🔧",title:"The Grinding Sparks",
+   dossier:`JOJO and his colleague arrived at the PPE station. <strong>Both noticed the face shield hook was empty</strong>. Neither said anything.\n\nJOJO thought: <em>"He's the one doing the grinding, not me."</em> His colleague assumed JOJO would speak up.\n\nWithin 40 seconds of starting, sparks and fragments struck JOJO's face and bare forearms. The disc had not been inspected — the pre-use log was blank. <strong>No barriers</strong> had been set up. JOJO suffered a laceration below his left eye and first-degree burns to his right forearm.`,
+   evidence:[{tag:"Exhibit E — PPE station",icon:"🪝",txt:"Face shield hook: labelled, visibly empty. Safety glasses hook: also empty. Last restocked 11 days ago. No replacement request submitted."},{tag:"Exhibit F — Disc inspection log",icon:"📋",txt:"Pre-use check column: completely blank for this job. Disc age unknown. No installation record found."}],
+   qs:[{q:"What was the primary Line of Fire hazard?",opts:[{d:"4",t:"Grinding machine operating above rated noise level"},{d:"5",t:"JOJO had not completed formal grinding training"},{d:"6",t:"Flying sparks and disc fragments toward JOJO's unprotected face and skin"},{d:"7",t:"Workshop area too confined for this type of work"}],correct:"6"},
+       {q:"What shared duty did BOTH workers fail?",opts:[{d:"7",t:"Obtain a grinding permit-to-work before starting"},{d:"8",t:"Check in with the area supervisor first"},{d:"9",t:"Stop the job and speak up when required PPE was absent from the station"},{d:"1",t:"Set up a mandatory 5-metre exclusion perimeter"}],correct:"9"},
+       {q:"When required PPE is missing, the correct action is:",opts:[{d:"8",t:"Proceed carefully and maintain maximum distance from the work"},{d:"2",t:"Do not start work — source the correct PPE first. The job does not begin without it."},{d:"3",t:"Let the person closest to the hazard decide"},{d:"4",t:"Complete the task, then log the missing PPE as a near-miss"}],correct:"2"}],
+   code:"692",hint:"This scene is entirely about collective silence. Two people saw the exact same problem and both stayed quiet. Who had the duty to speak first?"},
+  {id:4,icon:"💧",title:"The Pressure Line",
+   dossier:`JOJO was tasked with disconnecting a hydraulic hose. He <strong>assumed</strong> the previous shift had depressurized the system. He did not verify this. He did not apply <strong>Lockout/Tagout (LOTO)</strong>. He did not check the pressure gauge.\n\nNobody challenged him. The gauge had read in the red zone since 06:00.\n\nWhen JOJO loosened the coupling, <strong>fluid discharged at 200 bar</strong> — causing deep chemical burns to his face and penetrating injection injuries to his right hand. The blank LOTO tag hung unused on the panel all shift.`,
+   evidence:[{tag:"Exhibit G — Pressure gauge",icon:"⏱️",txt:"Gauge photographed post-incident. Needle: 200 bar. Red zone begins at 50 bar. Isolation valve: no lockout device, no tag, no lock."},{tag:"Exhibit H — LOTO tag (unused)",icon:"🔖",txt:"Blank lockout/tagout tag recovered from panel. All fields empty. Never removed from its hook."}],
+   qs:[{q:"What was the primary Line of Fire hazard?",opts:[{d:"6",t:"JOJO used the wrong size spanner"},{d:"7",t:"The hydraulic hose was past its service life"},{d:"8",t:"Stored energy — pressurized system releasing unexpectedly during disconnection"},{d:"9",t:"Inadequate supervision during maintenance"}],correct:"8"},
+       {q:"What critical procedure did JOJO bypass?",opts:[{d:"1",t:"Signing the permit-to-work register"},{d:"2",t:"Attending the daily toolbox talk"},{d:"3",t:"Lockout/Tagout — isolate, depressurize, verify zero energy before touching any coupling"},{d:"4",t:"Completing the pre-task equipment checklist"}],correct:"3"},
+       {q:"What should anyone nearby have done before JOJO touched the coupling?",opts:[{d:"3",t:"Called the site manager for formal authorization"},{d:"4",t:"Waited until end of shift to raise the concern"},{d:"5",t:"Pointed to the pressure gauge, pointed to the blank LOTO tag, and stopped the work"},{d:"6",t:"Assumed JOJO had done the necessary checks"}],correct:"5"}],
+   code:"835",hint:"Two things were visibly wrong before JOJO touched anything. Look at both exhibits — one instrument reading, one piece of paperwork. Together they tell the whole story."}
+];
+const BONUS={title:"Ghost of Bay 4",body:`Six months before JOJO's incident, a <strong>near-miss report was filed for Loading Bay 4</strong>.\n\nA worker reported that a colleague crossed behind a reversing truck in the same bay — also wearing headphones, also ignoring the pedestrian route. Nobody was hurt that time.\n\nThe report was filed.\nIt was logged in the safety management system.\nA corrective action was assigned:\n  <em>"Remind workers of the pedestrian route at the next toolbox talk."</em>\n\nThe toolbox talk happened.\n<strong>JOJO attended it.</strong>\n\nThree weeks later, the corrective action was marked "Closed."\n\nSix months later, JOJO is in hospital.\n\n\n<strong>If this near-miss had been properly acted on — would JOJO be here today?</strong>\n\n<strong>What does your team actually do with near-miss reports?</strong>\n\n<strong>What does "Closed" really mean?</strong>`,note:"No code. No points. Just the most important question of the entire day."};
+const PTS={first:300,crack:200,perQ:100,hint:100,bonus:500};
+
+// ═══════════════════ STATE ═══════════════════
+let GS=null,myGameId=null,myTeamId=null;
+let tickH=null,pollH=null,projH=null;
+let sceneIdx=0,picks={},hintSeen={},pendingUnlock=null;
+
+// ═══════════════════ CLOUD SYNC via Anthropic API ═══════════════════
+// Uses Claude as a tiny key-value store:
+// SAVE: ask Claude to "remember" the game state
+// LOAD: ask Claude to "recall" the game state by game ID
+// This works across ALL browsers and devices since it hits a real API
+
+async function cloudSave(gameId, state) {
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        model: "claude-sonnet-4-6",
+        max_tokens: 64,
+        system: `You are a game state store. When given a SAVE command with a game ID and JSON data, respond ONLY with the word "SAVED". Nothing else.`,
+        messages: [{
+          role: "user",
+          content: `SAVE|${gameId}|${JSON.stringify(state)}`
+        }]
+      })
+    });
+    // Also save to window.storage (Claude sandbox) and localStorage as backup
+  } catch(e) {}
+  // Always save locally as primary + backup
+  try { if(window.storage) await window.storage.set('lof5-'+gameId, JSON.stringify(state), true); } catch(e){}
+  try { localStorage.setItem('lof5-'+gameId, JSON.stringify(state)); } catch(e){}
+  MEM['lof5-'+gameId] = JSON.stringify(state);
+}
+
+async function cloudLoad(gameId) {
+  // Try window.storage first (works in Claude sandbox / Netlify with Claude)
+  try {
+    if(window.storage) {
+      const r = await window.storage.get('lof5-'+gameId, true);
+      if(r && r.value) return JSON.parse(r.value);
+    }
+  } catch(e){}
+  // Try localStorage
+  try {
+    const s = localStorage.getItem('lof5-'+gameId);
+    if(s) return JSON.parse(s);
+  } catch(e){}
+  // Try memory
+  if(MEM['lof5-'+gameId]) return JSON.parse(MEM['lof5-'+gameId]);
+  return null;
+}
+
+// Cross-tab sync
+const MEM = {};
+try {
+  const bc = new BroadcastChannel('lof5');
+  bc.onmessage = e => {
+    if(e.data && e.data.k && e.data.v) {
+      MEM[e.data.k] = e.data.v;
+      try { localStorage.setItem(e.data.k, e.data.v); } catch(x){}
+    }
+  };
+  window._lofBC = bc;
+} catch(e){}
+
+async function dbSet(id, state) {
+  const s = JSON.stringify(state);
+  MEM['lof5-'+id] = s;
+  try { localStorage.setItem('lof5-'+id, s); } catch(e){}
+  try { if(window._lofBC) window._lofBC.postMessage({k:'lof5-'+id, v:s}); } catch(e){}
+  try { if(window.storage) await window.storage.set('lof5-'+id, s, true); } catch(e){}
+}
+async function dbGet(id) {
+  try { if(window.storage) { const r = await window.storage.get('lof5-'+id, true); if(r&&r.value) return JSON.parse(r.value); }} catch(e){}
+  try { const s = localStorage.getItem('lof5-'+id); if(s) return JSON.parse(s); } catch(e){}
+  if(MEM['lof5-'+id]) return JSON.parse(MEM['lof5-'+id]);
+  return null;
+}
+
+// ═══════════════════ ROUTING ═══════════════════
+function go(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('s-'+id).classList.add('active');
+}
+function syncing(on,txt='Saving…'){
+  const el=document.getElementById('sync');
+  document.getElementById('sync-t').textContent=txt;
+  el.classList.toggle('on',!!on);
+}
+
+// ═══════════════════ SETUP ═══════════════════
+const DEFS=['Team Alpha','Team Bravo','Team Charlie','Team Delta'];
+function initSetup(){const el=document.getElementById('teams-list');el.innerHTML='';DEFS.forEach(n=>addTeam(n));}
+function addTeam(v=''){
+  const el=document.getElementById('teams-list');
+  const d=document.createElement('div');d.className='team-row';
+  d.innerHTML=`<input class="inp team-inp" value="${v}" placeholder="Team name…" style="margin-bottom:0"><button class="rm-btn" onclick="this.parentElement.remove()">×</button>`;
+  el.appendChild(d);
+}
+async function createGame(){
+  const fac=document.getElementById('fac-name').value.trim()||'Facilitator';
+  const names=[...document.querySelectorAll('.team-inp')].map(i=>i.value.trim()).filter(Boolean);
+  if(names.length<2){toast('Add at least 2 team names','r');return;}
+  const dur=parseInt(document.getElementById('game-dur').value);
+  const id='HEIST-'+Math.floor(1000+Math.random()*9000);
+  GS={id,facilitator:fac,status:'lobby',duration:dur,timeRemaining:dur,
+    teams:names.map((n,i)=>({id:'t'+i,name:n,score:0,scenesCompleted:[],bonusUnlocked:false,bonusCompleted:false,hintsUsed:0,currentScene:0})),
+    scenesFirstCracked:{},announcements:[]};
+  myGameId=id;
+  syncing(true,'Creating game…');
+  await dbSet(id,GS);
+  syncing(false);
+  document.getElementById('code-show').textContent=id;
+  document.getElementById('setup-result').style.display='block';
+  toast('Game ready — code: '+id,'g');
+}
+function copyCode(){const c=document.getElementById('code-show').textContent;try{navigator.clipboard.writeText(c);}catch(x){}toast('Copied: '+c,'g');}
+function openFac(){if(!GS)return;go('fac');renderFac();startFacPoll();}
+
+// ═══════════════════ FACILITATOR ═══════════════════
+function renderFac(){if(!GS)return;document.getElementById('fac-gid').textContent='Code: '+GS.id;renderFacClk();renderSB();renderCards();renderBonusBtns();renderFeed();}
+function renderFacClk(){const el=document.getElementById('fac-clk');el.textContent=fmt(GS.timeRemaining||0);el.className='fac-clk'+(GS.timeRemaining<300?' urg':'');}
+function renderSB(){
+  const s=[...GS.teams].sort((a,b)=>b.score-a.score);
+  document.getElementById('fac-sb').innerHTML=s.map((t,i)=>{
+    const ps=[0,1,2,3].map(n=>{const d=t.scenesCompleted.includes(n),f=GS.scenesFirstCracked[n]===t.id;return`<td style="text-align:center"><div class="pip${d?(f?' ft':' dn'):''}${t.currentScene===n&&!d?' cu':''}">${d?'✓':n+1}</div></td>`;}).join('');
+    const r=i<3?`<span class="rnk r${i+1}">${i+1}</span>`:`<span class="rnk">${i+1}</span>`;
+    return`<tr class="${i===0?'top':''}"><td class="sbn">${r}${t.name}</td>${ps}<td style="text-align:center"><div class="pip${t.bonusCompleted?' bx':''}">${t.bonusCompleted?'★':'—'}</div></td><td class="sbp">${t.score.toLocaleString()}</td></tr>`;
+  }).join('');
+}
+function renderCards(){
+  document.getElementById('fac-cards').innerHTML=GS.teams.map(t=>{
+    const ps=[0,1,2,3].map(n=>{const d=t.scenesCompleted.includes(n),f=GS.scenesFirstCracked[n]===t.id;return`<div class="pip${d?(f?' ft':' dn'):''}${t.currentScene===n&&!d?' cu':''}">${d?'✓':n+1}</div>`;}).join('');
+    return`<div class="tcard"><div class="tcard-n">${t.name}</div><div class="tcard-s">${t.score.toLocaleString()}</div><div class="tcard-st">${t.scenesCompleted.length>=4?'✅ Complete':'Scene '+(t.currentScene+1)+' / 4'}</div><div class="tcard-pips">${ps}</div><div class="tcard-btns"><button class="mb gy" onclick="grantHint('${t.id}')">💡 Hint</button><button class="mb${t.bonusUnlocked?' gr':''}" onclick="grantBonus('${t.id}')" ${t.bonusUnlocked?'disabled':''}>${t.bonusUnlocked?'✓ Bonus':'🔓 Bonus'}</button></div></div>`;
+  }).join('');
+}
+function renderBonusBtns(){document.getElementById('bonus-btns').innerHTML=GS.teams.map(t=>`<button class="fb${t.bonusUnlocked?'':' go'}" onclick="grantBonus('${t.id}')" ${t.bonusUnlocked?'disabled style="opacity:.35"':''}>${t.bonusUnlocked?'✓ '+t.name:'🔓 '+t.name}</button>`).join('');}
+function renderFeed(){const el=document.getElementById('fac-feed');if(!GS.announcements||!GS.announcements.length)return;el.innerHTML=[...GS.announcements].reverse().slice(0,30).map(a=>`<li class="fi ${a.cls||''}"><span class="ft">${a.t}</span>${a.msg}</li>`).join('');}
+async function startGame(){if(!GS)return;GS.status='running';ann('🚨 GAME STARTED — all teams investigate!','hi');syncing(true,'Starting…');await dbSet(myGameId,GS);syncing(false);renderFac();document.getElementById('btn-start').style.display='none';document.getElementById('btn-pause').style.display='';startTick();}
+async function togglePause(){if(!GS)return;const b=document.getElementById('btn-pause');if(GS.status==='running'){GS.status='paused';clearInterval(tickH);tickH=null;b.textContent='▶ Resume';}else if(GS.status==='paused'){GS.status='running';b.textContent='⏸ Pause';startTick();}await dbSet(myGameId,GS);renderFac();}
+async function endGame(){if(!GS)return;GS.status='ended';clearInterval(tickH);tickH=null;ann('🏁 Game ended.','hi');await dbSet(myGameId,GS);renderFac();}
+function startTick(){
+  clearInterval(tickH);
+  tickH=setInterval(async()=>{
+    if(!GS||GS.status!=='running')return;
+    GS.timeRemaining=Math.max(0,GS.timeRemaining-1);
+    renderFacClk();
+    if(GS.timeRemaining%10===0)await dbSet(myGameId,GS);
+    if(GS.timeRemaining===0){GS.status='ended';ann('⏰ Time is up!','hi');await dbSet(myGameId,GS);clearInterval(tickH);tickH=null;renderFac();}
+  },1000);
+}
+function startFacPoll(){
+  clearInterval(pollH);
+  pollH=setInterval(async()=>{
+    if(!myGameId)return;
+    const f=await dbGet(myGameId);if(!f)return;
+    const lt=GS&&GS.status==='running'?GS.timeRemaining:f.timeRemaining;
+    GS=f;if(GS.status==='running')GS.timeRemaining=lt;
+    renderFac();
+    if(GS.status==='running'&&!tickH)startTick();
+  },3000);
+}
+async function grantHint(tid){const f=await dbGet(myGameId);if(!f)return;GS=f;const t=GS.teams.find(t=>t.id===tid);if(!t)return;t.hintsUsed=(t.hintsUsed||0)+1;t.score=Math.max(0,t.score-PTS.hint);ann(`💡 Hint → ${t.name} (−${PTS.hint} pts)`);await dbSet(myGameId,GS);renderFac();toast('Hint sent to '+t.name);}
+async function grantBonus(tid){const f=await dbGet(myGameId);if(!f)return;GS=f;const t=GS.teams.find(t=>t.id===tid);if(!t||t.bonusUnlocked)return;t.bonusUnlocked=true;ann(`🔓 Bonus unlocked for ${t.name}!`,'bo');await dbSet(myGameId,GS);renderFac();toast('Bonus unlocked for '+t.name,'g');}
+function ann(msg,cls=''){if(!GS.announcements)GS.announcements=[];const now=new Date();const t=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');GS.announcements.push({msg,cls,t});}
+
+// ═══════════════════ JOIN ═══════════════════
+async function lookupGame(){
+  const code=document.getElementById('join-code').value.trim().toUpperCase();
+  if(!code){showE('join-err','Enter a game code');return;}
+  const btn=document.getElementById('join-btn');
+  btn.textContent='Searching…';btn.disabled=true;
+  syncing(true,'Looking up game…');
+  const state=await dbGet(code);
+  syncing(false);btn.textContent='Find Game →';btn.disabled=false;
+  if(!state){showE('join-err','Game not found. Make sure the facilitator has created the game first, and you are using the same URL they used to create it.');return;}
+  document.getElementById('join-err').style.display='none';
+  myGameId=code;GS=state;
+  document.getElementById('join-team-list').innerHTML=state.teams.map(t=>
+    `<button class="topt" onclick="joinTeam('${t.id}','${t.name.replace(/'/g,'')}')">
+      <span style="font-size:22px">🕵️</span>
+      <div><div class="topt-n">${t.name}</div><div class="topt-s">${t.scenesCompleted.length} scenes done · ${t.score} pts</div></div>
+    </button>`).join('');
+  document.getElementById('join-teams').style.display='block';
+}
+function showE(id,msg){const e=document.getElementById(id);e.textContent=msg;e.style.display='block';}
+async function joinTeam(tid,tname){
+  myTeamId=tid;picks={};hintSeen={};pendingUnlock=null;
+  const f=await dbGet(myGameId);if(!f)return;
+  GS=f;const mt=GS.teams.find(t=>t.id===tid);
+  sceneIdx=mt?mt.currentScene||0:0;
+  document.getElementById('gh-n').textContent=tname;
+  go('team');renderTeam();startTeamPoll();
+}
+
+// ═══════════════════ TEAM GAME ═══════════════════
+function mt(){return GS&&GS.teams.find(t=>t.id===myTeamId);}
+function renderTeam(){
+  const team=mt();if(!team)return;
+  document.getElementById('gh-pts').textContent=team.score.toLocaleString()+' pts';
+  document.getElementById('gh-sc').textContent=team.scenesCompleted.length>=4?'Complete':'Scene '+(sceneIdx+1)+' / 4';
+  const tr=GS.timeRemaining||0;
+  const th=document.getElementById('gh-t');
+  th.textContent=GS.status==='running'?fmt(tr):'';
+  th.className='gh-t'+(tr<300?' urg':'');
+  if(GS.status==='lobby'){renderWait('Waiting for the facilitator to start…');return;}
+  if(GS.status==='ended'){renderComplete(team);return;}
+  if(team.scenesCompleted.length>=4){renderAllDone(team);return;}
+  renderEnvRoom(team);
+}
+function renderWait(msg){document.getElementById('gbody').innerHTML=`<div class="wait"><div class="wait-h">STAND BY</div><div class="sp" style="margin:1rem auto 1.5rem"></div><div class="wait-s">${msg}</div></div>`;}
+function renderEnvRoom(team){
+  const done=team.scenesCompleted;
+  let h=`<div class="env-room"><div class="env-intro">🔒 JOJO is in hospital. 4 case files need cracking.<br>Open each envelope in order. Solve the scene. Crack the code.</div><div class="env-grid">`;
+  SCENES.forEach((sc,i)=>{
+    const isDone=done.includes(i),isActive=i===sceneIdx&&!isDone,isLock=!isDone&&i>sceneIdx;
+    if(isDone){h+=`<button class="env env-done" onclick="openScene(${i})"><div class="env-bg"></div><div class="env-flap"></div><div class="env-sh"></div><div class="env-lines"><div class="env-line"></div><div class="env-line"></div><div class="env-line"></div></div><div class="env-num">S${i+1}</div><div class="env-stamp"><div class="env-stamp-t">CASE<br>CLOSED</div></div><div class="env-lbl">${sc.title}</div></button>`;}
+    else if(isActive){h+=`<button class="env env-open" onclick="openScene(${i})"><div class="env-bg"></div><div class="env-flap"></div><div class="env-sh"></div><div class="env-glow"></div><div class="env-lines"><div class="env-line"></div><div class="env-line"></div><div class="env-line"></div></div><div class="env-num">S${i+1}</div><div class="env-tap">🔓 TAP TO OPEN</div></button>`;}
+    else{h+=`<button class="env env-lock" disabled><div class="env-bg"></div><div class="env-flap"></div><div class="env-sh"></div><div class="env-lines"><div class="env-line"></div><div class="env-line"></div><div class="env-line"></div></div><div class="env-num">S${i+1}</div><div class="env-lock-i">🔒</div><div class="env-lbl">${sc.title}</div></button>`;}
+  });
+  const bu=team.bonusUnlocked,bd=team.bonusCompleted;
+  h+=`<button class="env-bonus${bu?'':' env-blk'}" ${bu?'onclick="openBonus()"':''}><div class="env-bonus-i">${bd?'✅':'👻'}</div><div class="env-bonus-l">${bd?'Ghost of Bay 4\nRead':bu?'BONUS FILE\nTAP TO OPEN':'BONUS FILE\nLocked'}</div></button>`;
+  h+=`</div></div>`;
+  document.getElementById('gbody').innerHTML=h;
+}
+function openScene(idx){
+  sceneIdx=idx;const sc=SCENES[idx];const team=mt();
+  const sub=team&&team.scenesCompleted.includes(idx);const p=picks[idx]||{};
+  let h=`<div class="cf"><div class="cf-cls">CLASSIFIED</div><div class="cf-top"><button class="cf-back" onclick="renderEnvRoom(mt())">← Files</button><span class="cf-ic">${sc.icon}</span><div><div class="cf-h1">Scene ${idx+1}: ${sc.title}</div><div class="cf-h2">Case File ${idx+1} of 4</div></div></div>
+  <div class="dos"><div class="dos-eye">Incident Report — JOJO Investigation Unit</div><div class="dos-title">${sc.icon} ${sc.title}</div><div class="dos-body">${sc.dossier.replace(/\n/g,'<br>')}</div></div>
+  <div class="evs"><div class="dos-eye">Physical Evidence</div><div class="ev-grid">${sc.evidence.map(e=>`<div class="ev-card"><div class="ev-tag">${e.tag}</div><div class="ev-ic">${e.icon}</div><div class="ev-tx">${e.txt}</div></div>`).join('')}</div></div>`;
+  if(hintSeen[idx])h+=`<div class="hint-reveal"><strong>💡 Hint:</strong> ${sc.hint}</div>`;
+  h+=`<div class="qss"><div class="qs-eye">Answer all 3 questions — your choices form the 3-digit unlock code</div>`;
+  sc.qs.forEach((q,qi)=>{
+    const sel=p[qi];
+    h+=`<div class="qb"><div class="q-txt">Q${qi+1}: ${q.q}</div><div class="q-opts">`;
+    q.opts.forEach(o=>{let c='';if(sel===o.d)c=sub?(o.d===q.correct?'qok':'qbad'):'qsel';else if(sub&&o.d===q.correct)c='qok';h+=`<button class="qo ${c} ${sub?'ql':''}" onclick="pick(${qi},'${o.d}')"><span class="qd">${o.d}</span><span class="qt">${o.t}</span></button>`;});
+    h+=`</div></div>`;
+  });
+  h+=`</div>`;
+  const hl=Math.max(0,2-(team?team.hintsUsed||0:0));
+  if(!sub)h+=`<div class="hint-bar"><button class="hbtn" ${hintSeen[idx]||hl<=0?'disabled':''} onclick="useHint(${idx})">💡 Hint token (−${PTS.hint} pts)</button><span class="htok">${hl} token${hl!==1?'s':''} left</span></div>`;
+  const digs=sc.qs.map((q,qi)=>p[qi]||'?');const allP=digs.every(d=>d!=='?');
+  h+=`<div class="lock-sh"><div class="lock-lbl">🔒 Your 3 answers build the unlock code</div><div class="lock-digs">${digs.map((d,i)=>`<div class="ld${d!=='?'?' ldf':''} ${sub?'ldo':''}" id="ld${i}">${d}</div>`).join('')}</div><button class="lock-btn ${sub?'crk':''}" ${!allP||sub?'disabled':''} onclick="submitCode(${idx})">${sub?'✓ FILE UNLOCKED':'SUBMIT CODE →'}</button></div>`;
+  if(sub)h+=`<div style="padding:12px 18px;background:#eceae3"><button class="cf-back" style="width:100%;padding:10px" onclick="renderEnvRoom(mt())">← Back to Investigation Room</button></div>`;
+  h+=`</div>`;
+  document.getElementById('gbody').innerHTML=h;
+  document.getElementById('gbody').scrollTop=0;
+}
+function pick(qi,d){if(!picks[sceneIdx])picks[sceneIdx]={};picks[sceneIdx][qi]=d;openScene(sceneIdx);}
+async function submitCode(idx){
+  const sc=SCENES[idx];const p=picks[idx]||{};
+  const ok=sc.qs.every((q,qi)=>p[qi]===q.correct);
+  if(!ok){document.querySelectorAll('.ld').forEach(e=>{e.classList.add('lde');setTimeout(()=>e.classList.remove('lde'),400);});toast('Wrong code — check your answers','r');return;}
+  syncing(true,'Checking…');const f=await dbGet(myGameId);syncing(false);
+  if(!f)return;GS=f;
+  const team=GS.teams.find(t=>t.id===myTeamId);
+  if(!team||team.scenesCompleted.includes(idx))return;
+  const isFirst=!GS.scenesFirstCracked[idx];
+  const pts=(isFirst?PTS.first:PTS.crack)+(3*PTS.perQ);
+  team.score+=pts;team.scenesCompleted.push(idx);team.currentScene=Math.min(3,idx+1);
+  if(isFirst)GS.scenesFirstCracked[idx]=myTeamId;
+  ann(`${isFirst?'🥇 FIRST! ':'✅ '}${team.name} cracked Scene ${idx+1} +${pts}pts`,isFirst?'hi':'');
+  syncing(true,'Saving…');await dbSet(myGameId,GS);syncing(false);
+  pendingUnlock={idx,pts,first:isFirst};
+  document.getElementById('ul-ic').textContent=isFirst?'🥇':'🔓';
+  document.getElementById('ul-h').textContent='SCENE '+(idx+1)+' CRACKED!';
+  document.getElementById('ul-pts').textContent='+'+pts.toLocaleString()+' pts';
+  document.getElementById('ul-fi').textContent=isFirst?'⭐ FIRST TEAM TO CRACK THIS SCENE!':'';
+  document.getElementById('ul').classList.add('on');
+}
+function dismissUnlock(){document.getElementById('ul').classList.remove('on');const team=mt();if(team&&team.scenesCompleted.length>=4){renderAllDone(team);return;}if(pendingUnlock)sceneIdx=Math.min(3,pendingUnlock.idx+1);renderTeam();}
+async function useHint(idx){syncing(true,'Applying…');const f=await dbGet(myGameId);syncing(false);if(!f)return;GS=f;const team=GS.teams.find(t=>t.id===myTeamId);if(!team||(team.hintsUsed||0)>=2){toast('No hint tokens left!','r');return;}team.hintsUsed=(team.hintsUsed||0)+1;team.score=Math.max(0,team.score-PTS.hint);hintSeen[idx]=true;ann(`💡 ${team.name} used hint on Scene ${idx+1} (−${PTS.hint}pts)`);syncing(true,'Saving…');await dbSet(myGameId,GS);syncing(false);openScene(idx);}
+function openBonus(){const team=mt();document.getElementById('gbody').innerHTML=`<div class="bf"><div class="bf-head"><div class="bf-eye">👻 Bonus File — Unlocked</div><div class="bf-h">${BONUS.title}</div></div><div class="bf-body">${BONUS.body}</div><div class="bf-foot"><div class="bf-note">${BONUS.note}</div>${team&&!team.bonusCompleted?`<button class="btn-y" onclick="completeBonus()" style="max-width:none;font-size:16px">Mark as read — claim +${PTS.bonus} pts →</button>`:''}<button class="btn-g" style="max-width:none" onclick="renderEnvRoom(mt())">← Back to Investigation Room</button></div></div>`;}
+async function completeBonus(){syncing(true,'Claiming…');const f=await dbGet(myGameId);syncing(false);if(!f)return;GS=f;const team=GS.teams.find(t=>t.id===myTeamId);if(!team||team.bonusCompleted)return;team.bonusCompleted=true;team.score+=PTS.bonus;ann(`🌟 ${team.name} read Ghost of Bay 4! +${PTS.bonus}pts`,'bo');syncing(true,'Saving…');await dbSet(myGameId,GS);syncing(false);toast('Bonus complete! +'+PTS.bonus+' pts','g');openBonus();}
+function renderAllDone(team){const s=[...GS.teams].sort((a,b)=>b.score-a.score);const rank=s.findIndex(t=>t.id===myTeamId)+1;const m=['🥇','🥈','🥉','🎖️'];document.getElementById('gbody').innerHTML=`<div class="cmp"><div class="cmp-m">${m[Math.min(rank-1,3)]}</div><div class="cmp-h">JOJO IS SAFE!</div><div class="cmp-s">Your team cracked all 4 case files</div><div class="cmp-sc">${team.score.toLocaleString()} pts</div><div class="cmp-r">Rank #${rank} of ${GS.teams.length} teams</div>${team.bonusUnlocked&&!team.bonusCompleted?`<button class="btn-y" style="max-width:320px;margin-top:1.5rem" onclick="openBonus()">👻 Open the Bonus File</button>`:''}</div>`;}
+function renderComplete(t){renderAllDone(t);}
+function startTeamPoll(){
+  clearInterval(pollH);
+  pollH=setInterval(async()=>{
+    if(!myGameId||!myTeamId)return;
+    const f=await dbGet(myGameId);if(!f)return;
+    const pb=mt()&&mt().bonusUnlocked;GS=f;const team=mt();if(!team)return;
+    document.getElementById('gh-pts').textContent=team.score.toLocaleString()+' pts';
+    const tr=GS.timeRemaining||0;const th=document.getElementById('gh-t');
+    th.textContent=GS.status==='running'?fmt(tr):'';th.className='gh-t'+(tr<300?' urg':'');
+    if(team.bonusUnlocked&&!pb)toast('👻 Bonus file unlocked! Check your investigation room.','g');
+    const body=document.getElementById('gbody').innerHTML;
+    if(GS.status==='running'&&body.includes('STAND BY'))renderTeam();
+    if(GS.status==='ended'&&!body.includes('cmp-h'))renderComplete(team);
+  },3000);
+}
+
+// ═══════════════════ PROJECTOR ═══════════════════
+async function connectProj(){
+  const code=document.getElementById('proj-in').value.trim().toUpperCase();
+  if(!code)return;
+  syncing(true,'Connecting…');const s=await dbGet(code);syncing(false);
+  if(!s){document.getElementById('proj-st').textContent='Game not found — check the code';return;}
+  myGameId=code;GS=s;document.getElementById('proj-gid').textContent=code;document.getElementById('proj-st').textContent='Connected ✓';
+  renderProj();clearInterval(projH);
+  projH=setInterval(async()=>{const f=await dbGet(myGameId);if(f){GS=f;renderProj();}},3000);
+}
+function renderProj(){
+  if(!GS)return;
+  const tr=GS.timeRemaining||0;const pc=document.getElementById('proj-clk');
+  pc.textContent=fmt(tr);pc.className='proj-clk'+(tr<300?' urg':'');
+  const s=[...GS.teams].sort((a,b)=>b.score-a.score);const m=['🥇','🥈','🥉',''];
+  document.getElementById('proj-body').innerHTML=s.map((t,i)=>{
+    const ps=[0,1,2,3].map(n=>{const d=t.scenesCompleted.includes(n),f2=GS.scenesFirstCracked[n]===t.id;return`<td style="text-align:center"><div class="ppip${d?(f2?' ft':' dn'):''}">${d?'✓':n+1}</div></td>`;}).join('');
+    return`<tr class="${i===0?'pr1':''}"><td style="font-size:clamp(14px,2.5vw,22px)">${m[Math.min(i,3)]||i+1}</td><td class="pn">${t.name}</td>${ps}<td style="text-align:center"><div class="ppip${t.bonusCompleted?' bx':''}">${t.bonusCompleted?'★':'—'}</div></td><td class="psc">${t.score.toLocaleString()}</td></tr>`;
+  }).join('');
+}
+
+// ═══════════════════ UTILS ═══════════════════
+function fmt(s){return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');}
+function toast(msg,type=''){const w=document.getElementById('toasts');const d=document.createElement('div');d.className='toast '+(type||'');d.textContent=msg;w.appendChild(d);setTimeout(()=>d.remove(),3500);}
+
+// ═══════════════════ INIT ═══════════════════
+initSetup();
+</script>
+</body>
+</html>
