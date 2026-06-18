@@ -10,7 +10,7 @@
   --tape-dark:#c9a010;--red:#c0392b;--green:#1e8449;--green-light:#27ae60;
   --mono:'Courier New',monospace;--stamp:'Impact','Arial Narrow',sans-serif;
   --sh:4px 6px 20px rgba(0,0,0,.45);
-}
+}h
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{font-family:Arial,sans-serif;background:var(--ink);color:#f0f0f0;min-height:100vh}
 .screen{display:none}
@@ -21,7 +21,7 @@ html,body{font-family:Arial,sans-serif;background:var(--ink);color:#f0f0f0;min-h
 .land-title{font-family:var(--stamp);font-size:clamp(60px,13vw,110px);color:var(--tape);line-height:.85;letter-spacing:.03em;text-shadow:5px 5px 0 var(--red);margin-bottom:.5rem}
 .land-sub{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#3a3a3a;margin-bottom:2.5rem}
 .land-menu{display:flex;flex-direction:column;gap:10px;width:100%;max-width:300px}
-.menu-card{background:var(--paper);border:none;padding:15px 18px;cursor:pointer;display:flex;align-items:center;gap:14px;text-align:left;width:100%;border-left:4px solid var(--tape);transition:transform .12s,box-shadow .12s}
+.menu-card{background:var(--paper);border:none;padding:15px 18hpx;cursor:pointer;display:flex;align-items:center;gap:14px;text-align:left;width:100%;border-left:4px solid var(--tape);transition:transform .12s,box-shadow .12s}
 .menu-card:hover{transform:translateY(-2px);box-shadow:var(--sh)}
 .mc-icon{font-size:22px;flex-shrink:0}
 .mc-title{font-family:var(--stamp);font-size:15px;letter-spacing:.05em;color:var(--ink);display:block}
@@ -439,9 +439,9 @@ let sceneIdx=0,picks={},hintSeen={},pendingUnlock=null;
 //  2. Create a new project (free Spark plan)
 //  3. Build > Realtime Database > Create database > Start in TEST mode
 //  4. Copy the database URL (e.g. https://my-project-default-rtdb.firebaseio.com)
-//  5. Replace YOUR_FIREBASE_URL below with your actual URL
+//  5. Replace https://lof-heist-default-rtdb.firebaseio.com below with your actual URL
 
-const FIREBASE_URL = 'YOUR_FIREBASE_URL'; // <-- replace this with your Firebase URL
+const FIREBASE_URL = 'https://lof-heist-default-rtdb.firebaseio.com'; // <-- replace this with your Firebase URL
 
 async function cloudSave(gameId, state) {
   if (!FIREBASE_URL || FIREBASE_URL === 'YOUR_FIREBASE_URL') return;
