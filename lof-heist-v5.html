@@ -429,71 +429,80 @@ let sceneIdx=0,picks={},hintSeen={},pendingUnlock=null;
 // LOAD: ask Claude to "recall" the game state by game ID
 // This works across ALL browsers and devices since it hits a real API
 
+
+// ═══════════════════ FIREBASE REALTIME DATABASE SYNC ═══════════════════
+// Replaces the Anthropic API sync with Firebase Realtime Database.
+// Works across ALL browsers and devices worldwide — free, no server needed.
+//
+// SETUP (one-time, ~2 minutes):
+//  1. Go to https://console.firebase.google.com
+//  2. Create a new project (free Spark plan)
+//  3. Build > Realtime Database > Create database > Start in TEST mode
+//  4. Copy the database URL (e.g. https://my-project-default-rtdb.firebaseio.com)
+//  5. Replace YOUR_FIREBASE_URL below with your actual URL
+
+const FIREBASE_URL = 'YOUR_FIREBASE_URL'; // <-- replace this with your Firebase URL
+
 async function cloudSave(gameId, state) {
+  if (!FIREBASE_URL || FIREBASE_URL === 'YOUR_FIREBASE_URL') return;
   try {
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({
-        model: "claude-sonnet-4-6",
-        max_tokens: 64,
-        system: `You are a game state store. When given a SAVE command with a game ID and JSON data, respond ONLY with the word "SAVED". Nothing else.`,
-        messages: [{
-          role: "user",
-          content: `SAVE|${gameId}|${JSON.stringify(state)}`
-        }]
-      })
+    const res = await fetch(FIREBASE_URL + '/games/' + gameId + '.json', {
+      method: 'PUT',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(state)
     });
-    // Also save to window.storage (Claude sandbox) and localStorage as backup
-  } catch(e) {}
-  // Always save locally as primary + backup
-  try { if(window.storage) await window.storage.set('lof5-'+gameId, JSON.stringify(state), true); } catch(e){}
-  try { localStorage.setItem('lof5-'+gameId, JSON.stringify(state)); } catch(e){}
-  MEM['lof5-'+gameId] = JSON.stringify(state);
+    if (!res.ok) console.warn('Firebase save failed:', res.status);
+  } catch(e) {
+    console.warn('cloudSave error:', e);
+  }
 }
 
 async function cloudLoad(gameId) {
-  // Try window.storage first (works in Claude sandbox / Netlify with Claude)
+  if (!FIREBASE_URL || FIREBASE_URL === 'YOUR_FIREBASE_URL') return null;
   try {
-    if(window.storage) {
-      const r = await window.storage.get('lof5-'+gameId, true);
-      if(r && r.value) return JSON.parse(r.value);
-    }
-  } catch(e){}
-  // Try localStorage
-  try {
-    const s = localStorage.getItem('lof5-'+gameId);
-    if(s) return JSON.parse(s);
-  } catch(e){}
-  // Try memory
-  if(MEM['lof5-'+gameId]) return JSON.parse(MEM['lof5-'+gameId]);
-  return null;
+    const res = await fetch(FIREBASE_URL + '/games/' + gameId + '.json');
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (data && data.id) return data;
+    return null;
+  } catch(e) {
+    console.warn('cloudLoad error:', e);
+    return null;
+  }
 }
 
-// Cross-tab sync
 const MEM = {};
+
+// BroadcastChannel: syncs between tabs on the same browser (bonus)
 try {
   const bc = new BroadcastChannel('lof5');
   bc.onmessage = e => {
-    if(e.data && e.data.k && e.data.v) {
+    if (e.data && e.data.k && e.data.v) {
       MEM[e.data.k] = e.data.v;
-      try { localStorage.setItem(e.data.k, e.data.v); } catch(x){}
+      try { localStorage.setItem(e.data.k, e.data.v); } catch(x) {}
     }
   };
   window._lofBC = bc;
-} catch(e){}
+} catch(e) {}
 
 async function dbSet(id, state) {
-  const s = JSON.stringify(state);
-  MEM['lof5-'+id] = s;
-  try { localStorage.setItem('lof5-'+id, s); } catch(e){}
-  try { if(window._lofBC) window._lofBC.postMessage({k:'lof5-'+id, v:s}); } catch(e){}
-  try { if(window.storage) await window.storage.set('lof5-'+id, s, true); } catch(e){}
+  const val = JSON.stringify(state);
+  MEM[id] = val;
+  try { localStorage.setItem(id, val); } catch(e) {}
+  try { if (window._lofBC) window._lofBC.postMessage({k: id, v: val}); } catch(e) {}
+  // Primary sync: Firebase (cross-browser, cross-device, cross-country)
+  await cloudSave(id, state);
 }
+
 async function dbGet(id) {
-  try { if(window.storage) { const r = await window.storage.get('lof5-'+id, true); if(r&&r.value) return JSON.parse(r.value); }} catch(e){}
-  try { const s = localStorage.getItem('lof5-'+id); if(s) return JSON.parse(s); } catch(e){}
-  if(MEM['lof5-'+id]) return JSON.parse(MEM['lof5-'+id]);
+  // Always try Firebase first — it is the source of truth across devices
+  try {
+    const remote = await cloudLoad(id);
+    if (remote) { MEM[id] = JSON.stringify(remote); return remote; }
+  } catch(e) {}
+  // Local fallbacks (same browser only)
+  try { if (MEM[id]) return JSON.parse(MEM[id]); } catch(e) {}
+  try { const raw = localStorage.getItem(id); if (raw) return JSON.parse(raw); } catch(e) {}
   return null;
 }
 
